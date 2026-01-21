@@ -1,17 +1,18 @@
-export {}
+export { }
 
-// Candidate data
+// ============================================
+// CANDIDATE DATA
+// ============================================
 const CANDIDATE_DATA = {
   firstName: "Nikhil",
   lastName: "Garia",
-  legalName: "Nikhil",
-  familyName: "Garia",
   email: "nikhil190.ng@gmail.com",
-  phone: "19702584069",
+  phone: "8430305550",
   city: "California City",
   state: "California",
   country: "United States",
   address: "California City, CA, USA",
+  postalCode: "123456",
   linkedin: "linkedin.com/in/nikhil-garia-1st",
   experience: "4+ years",
   resumeUrl: "https://mrd-live.s3.amazonaws.com/mrd-developer-resume/20250709112810USA_Nikhil_Garia_DevSecOps_Engineer_CV.pdf"
@@ -20,274 +21,23 @@ const CANDIDATE_DATA = {
 console.log("Job Auto Apply Extension Loaded!");
 console.log("Current URL:", window.location.href);
 
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 function isVisible(element: HTMLElement): boolean {
   return !!(element.offsetWidth || element.offsetHeight || element.getClientRects().length);
 }
 
-// ============================================
-// STEP 2 & 3: DETECT AND AUTO-CLICK "APPLY NOW" BUTTON
-// ============================================
-async function detectAndClickApplyButton(): Promise<boolean> {
-  console.log("Detecting 'Apply Now' button...");
-  
-  const selectors = [
-    'button[data-automation-id="apply"]',
-    'a[data-automation-id="apply"]',
-    '[aria-label*="Apply" i]'
-  ];
-  
-  for (const selector of selectors) {
-    try {
-      const button = document.querySelector(selector);
-      if (button && isVisible(button as HTMLElement)) {
-        console.log("Apply button found:", selector);
-        console.log("Auto-clicking Apply button");
-        (button as HTMLElement).click();
-        return true;
-      }
-    } catch (e) {}
-  }
-  
-  const allButtons = document.querySelectorAll('button, a');
-  for (const button of allButtons) {
-    const text = button.textContent?.trim().toLowerCase() || '';
-    if ((text === 'apply' || text === 'apply now') && isVisible(button as HTMLElement)) {
-      console.log("Apply button found by text:", text);
-      console.log("Auto-clicking Apply button...");
-      (button as HTMLElement).click();
-      return true;
-    }
-  }
-  
-  console.log("Apply button not found on this page");
-  return false;
-}
-
-// ============================================
-//  DETECT AND CLICK "APPLY MANUALLY" BUTTON
-// ============================================
-
-
-
-async function detectAndClickApplyManually(): Promise<boolean> {
-  console.log("Detecting 'Apply Manually' button");
-  
-  await sleep(2000);
-  
-  const applyManuallyButton = document.querySelector('a[data-automation-id="applyManually"]');
-  
-  if (applyManuallyButton && isVisible(applyManuallyButton as HTMLElement)) {
-    console.log("'Apply Manually' button found!");
-    console.log("Auto-clicking 'Apply Manually'...");
-    (applyManuallyButton as HTMLElement).click();
-    return true;
-  }
-  
-  const allLinks = document.querySelectorAll('a');
-  for (const link of allLinks) {
-    const text = link.textContent?.trim().toLowerCase() || '';
-    if (text === 'apply manually' || text.includes('apply manually')) {
-      console.log("'Apply Manually' link found by text!");
-      console.log("Auto-clicking 'Apply Manually'...");
-      (link as HTMLElement).click();
-      return true;
-    }
-  }
-  
-  console.log("'Apply Manually' button not found");
-  return false;
-}
-
-
-// Helper function to wait
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Helper to fill text input with better event triggering
-function fillInput(element: HTMLInputElement | HTMLTextAreaElement, value: string) {
-  if (!element) return false;
-  
-  // Focus the element first
-  element.focus();
-  
-  // Set value
-  element.value = value;
-  
-  // Trigger all possible events
-  element.dispatchEvent(new Event('input', { bubbles: true }));
-  element.dispatchEvent(new Event('change', { bubbles: true }));
-  element.dispatchEvent(new Event('blur', { bubbles: true }));
-  element.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }));
-  element.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
-  
-  // Blur the element
-  element.blur();
-  
-  console.log(`Filled: ${element.name || element.id || 'unknown'} = ${value}`);
-  return true;
-}
-
-// Find and fill by multiple strategies
-function smartFill(keywords: string[], value: string): boolean {
-  // Strategy 1: Find by input attributes
-  for (const keyword of keywords) {
-    // By name attribute
-    let elements = document.querySelectorAll(`input[name*="${keyword}" i], textarea[name*="${keyword}" i]`);
-    for (const el of elements) {
-      if (fillInput(el as HTMLInputElement, value)) return true;
-    }
-    
-    // By id attribute
-    elements = document.querySelectorAll(`input[id*="${keyword}" i], textarea[id*="${keyword}" i]`);
-    for (const el of elements) {
-      if (fillInput(el as HTMLInputElement, value)) return true;
-    }
-    
-    // By aria-label
-    elements = document.querySelectorAll(`input[aria-label*="${keyword}" i], textarea[aria-label*="${keyword}" i]`);
-    for (const el of elements) {
-      if (fillInput(el as HTMLInputElement, value)) return true;
-    }
-    
-    // By placeholder
-    elements = document.querySelectorAll(`input[placeholder*="${keyword}" i], textarea[placeholder*="${keyword}" i]`);
-    for (const el of elements) {
-      if (fillInput(el as HTMLInputElement, value)) return true;
-    }
-  }
-  
-  // Strategy 2: Find by label text
-  const labels = document.querySelectorAll('label');
-  for (const label of labels) {
-    const labelText = label.textContent?.toLowerCase() || '';
-    if (keywords.some(kw => labelText.includes(kw.toLowerCase()))) {
-      const forAttr = label.getAttribute('for');
-      if (forAttr) {
-        const input = document.getElementById(forAttr) as HTMLInputElement;
-        if (input && (input.tagName === 'INPUT' || input.tagName === 'TEXTAREA')) {
-          if (fillInput(input, value)) return true;
-        }
-      }
-      
-      // Sometimes label wraps the input
-      const input = label.querySelector('input, textarea') as HTMLInputElement;
-      if (input) {
-        if (fillInput(input, value)) return true;
-      }
-    }
-  }
-  
-  return false;
-}
-
-// Helper to select dropdown option
-function smartSelect(keywords: string[], valueToFind: string): boolean {
-  const selects = document.querySelectorAll('select');
-  
-  for (const select of selects) {
-    const selectName = (select.name || select.id || select.getAttribute('aria-label') || '').toLowerCase();
-    
-    if (keywords.some(kw => selectName.includes(kw.toLowerCase()))) {
-      const options = Array.from(select.options);
-      const targetOption = options.find(opt => 
-        opt.text.toLowerCase().includes(valueToFind.toLowerCase()) ||
-        opt.value.toLowerCase().includes(valueToFind.toLowerCase())
-      );
-      
-      if (targetOption) {
-        select.value = targetOption.value;
-        select.dispatchEvent(new Event('change', { bubbles: true }));
-        select.dispatchEvent(new Event('blur', { bubbles: true }));
-        console.log(`Selected: ${select.name || select.id} = ${valueToFind}`);
-        return true;
-      }
-    }
-  }
-  
-  return false;
-}
-
-// Helper to click radio button
-function smartClickRadio(keywords: string[]): boolean {
-  const radios = document.querySelectorAll('input[type="radio"]');
-  
-  for (const radio of radios) {
-    const label = radio.closest('label')?.textContent?.toLowerCase() || '';
-    const ariaLabel = (radio as HTMLInputElement).getAttribute('aria-label')?.toLowerCase() || '';
-    const value = (radio as HTMLInputElement).value?.toLowerCase() || '';
-    
-    if (keywords.some(kw => label.includes(kw.toLowerCase()) || ariaLabel.includes(kw.toLowerCase()) || value.includes(kw.toLowerCase()))) {
-      (radio as HTMLInputElement).checked = true;
-      (radio as HTMLInputElement).click();
-      radio.dispatchEvent(new Event('change', { bubbles: true }));
-      console.log(`Clicked radio: ${keywords[0]}`);
-      return true;
-    }
-  }
-  
-  return false;
-}
-
-// Main auto-fill function
-async function autoFillForm() {
-  console.log("Starting auto-fill process...");
-  
-  await sleep(1500);
-  
-  // Fill all fields with smart detection
-  console.log("Filling name fields...");
-  smartFill(['legal', 'given', 'first'], CANDIDATE_DATA.firstName);
-  await sleep(400);
-  
-  smartFill(['family', 'last', 'surname'], CANDIDATE_DATA.lastName);
-  await sleep(400);
-  
-  console.log("Filling contact fields...");
-  smartFill(['email', 'e-mail'], CANDIDATE_DATA.email);
-  await sleep(400);
-  
-  smartFill(['phone', 'mobile', 'telephone', 'contact'], CANDIDATE_DATA.phone);
-  await sleep(400);
-  
-  console.log("Filling address fields...");
-  smartFill(['address', 'street', 'line'], CANDIDATE_DATA.address);
-  await sleep(400);
-  
-  smartFill(['city', 'town'], CANDIDATE_DATA.city);
-  await sleep(400);
-  
-  console.log("Filling dropdowns...");
-  smartSelect(['country', 'nation'], CANDIDATE_DATA.country);
-  await sleep(500);
-  
-  smartSelect(['state', 'province', 'region'], CANDIDATE_DATA.state);
-  await sleep(400);
-  
-  console.log("Filling other fields...");
-  smartFill(['linkedin', 'profile'], CANDIDATE_DATA.linkedin);
-  await sleep(400);
-  
-  smartFill(['experience', 'years'], CANDIDATE_DATA.experience);
-  await sleep(400);
-  
-  // Click "No" for Workday employee question
-  smartClickRadio(['no']);
-  await sleep(400);
-  
-  console.log("Auto-fill complete!");
-  
-  // Show success notification
-  // showNotification('Form auto-filled successfully!', 'success');
-}
-
-// Show notification
-function showNotification(message: string, type: 'success' | 'info' | 'error' = 'info') {
+function showNotification(message: string, type: 'success' | 'info' | 'error' | 'warning' = 'info') {
   const colors = {
     success: '#10b981',
     info: '#3b82f6',
-    error: '#ef4444'
+    error: '#ef4444',
+    warning: '#f59e0b'
   };
-  
+
   const notification = document.createElement('div');
   notification.style.cssText = `
     position: fixed;
@@ -305,7 +55,7 @@ function showNotification(message: string, type: 'success' | 'info' | 'error' = 
   `;
   notification.textContent = message;
   document.body.appendChild(notification);
-  
+
   setTimeout(() => {
     notification.style.animation = 'slideOut 0.3s ease-out';
     setTimeout(() => notification.remove(), 300);
@@ -326,93 +76,534 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Check if we're on an application form page
-function isApplicationPage() {
+// ============================================
+// STEP 1: DETECT PAGE TYPE
+// ============================================
+function detectPageType(): 'job-listing' | 'job-details' | 'apply-options' | 'application-form' | 'unknown' {
   const url = window.location.href.toLowerCase();
-  return url.includes('apply') || 
-         url.includes('application') ||
-         url.includes('job');
+
+  // Application form page (after clicking Apply Manually)
+  if (url.includes('applymanually') || document.querySelector('[data-automation-id="applyFlowPage"]')) {
+    return 'application-form';
+  }
+
+  // Apply options page (Apply Manually / Apply with Resume)
+  if (url.includes('/apply/') && document.querySelector('[data-automation-id="applyManually"]')) {
+    return 'apply-options';
+  }
+
+  // Job details page (single job with Apply button)
+  // Check for Apply button first - most reliable indicator
+  if (document.querySelector('button[data-automation-id="apply"]') ||
+    document.querySelector('a[data-automation-id="apply"]')) {
+    return 'job-details';
+  }
+
+  // Also check URL patterns for job details
+  if (url.includes('/details/') || url.includes('/job/')) {
+    // Double check for Apply button
+    const applyButtons = Array.from(document.querySelectorAll('button, a'));
+    const hasApplyButton = applyButtons.some(btn =>
+      btn.textContent?.trim().toLowerCase() === 'apply'
+    );
+    if (hasApplyButton) {
+      return 'job-details';
+    }
+  }
+
+  // Job listing page (multiple jobs)
+  if (url.includes('workday') || url.includes('jobs')) {
+    return 'job-listing';
+  }
+
+  return 'unknown';
 }
 
-// Initialize
-if (isApplicationPage()) {
-  console.log("On application page, will auto-fill in 2 seconds...");
-  //showNotification('Auto-fill will start in 2 seconds...', 'info');
-  setTimeout(autoFillForm, 2000);
-} else {
-  console.log("Not on application page yet");
+// ============================================
+// STEP 2: CLICK "APPLY" BUTTON ON JOB DETAILS
+// ============================================
+async function clickApplyButton(): Promise<boolean> {
+  console.log("Looking for 'Apply' button");
+  showNotification("Looking for Apply button", "info");
+
+  await sleep(1000);
+
+  const selectors = [
+    'button[data-automation-id="apply"]',
+    'a[data-automation-id="apply"]',
+    '[aria-label*="Apply" i]'
+  ];
+
+  for (const selector of selectors) {
+    const button = document.querySelector(selector);
+    if (button && isVisible(button as HTMLElement)) {
+      console.log("Apply button found!");
+      showNotification("Apply button found! Clicking", "success");
+      await sleep(500);
+      (button as HTMLElement).click();
+      return true;
+    }
+  }
+
+  // Fallback: search by text
+  const allButtons = document.querySelectorAll('button, a');
+  for (const button of allButtons) {
+    const text = button.textContent?.trim().toLowerCase() || '';
+    if ((text === 'apply' || text === 'apply now') && isVisible(button as HTMLElement)) {
+      console.log("Apply button found by text!");
+      showNotification("Apply button found! Clicking...", "success");
+      await sleep(500);
+      (button as HTMLElement).click();
+      return true;
+    }
+  }
+
+  console.log("Apply button not found");
+  showNotification("Apply button not found", "error");
+  return false;
 }
 
-async function executeFullFlow() {
-  console.log("\n" + "=".repeat(60));
-  console.log("AUTO-APPLY PROCESS");
-  console.log("=".repeat(60) + "\n");
-  
-  const url = window.location.href.toLowerCase();
-  
-  // STAGE 1: Job details page
-  if (url.includes('job') && !url.includes('apply')) {
-    console.log("On job details page");
-    await sleep(2000);
-    const clicked = await detectAndClickApplyButton();
-    
-    if (clicked) {
-      console.log("Waiting for Apply options page...");
-      await sleep(3000);
-      const manuallyClicked = await detectAndClickApplyManually();
-      
-      if (manuallyClicked) {
-        console.log("Waiting for application form to load");
+// ============================================
+// STEP 3: CLICK "APPLY MANUALLY" BUTTON
+// ============================================
+async function clickApplyManually(): Promise<boolean> {
+  console.log("Looking for 'Apply Manually' button");
+  showNotification("Looking for Apply Manually", "info");
+
+  await sleep(1500); // Wait for popup to appear
+
+  // Try multiple selectors for Apply Manually button
+  const selectors = [
+    'a[data-automation-id="applyManually"]',
+    'button:contains("Apply Manually")',
+    'a:contains("Apply Manually")'
+  ];
+
+  for (const selector of selectors) {
+    const button = document.querySelector(selector);
+    if (button && isVisible(button as HTMLElement)) {
+      console.log("'Apply Manually' found with selector:", selector);
+      showNotification("Clicking Apply Manually", "success");
+      await sleep(500);
+      (button as HTMLElement).click();
+      return true;
+    }
+  }
+
+  // Fallback: Search all buttons and links by text
+  const allElements = document.querySelectorAll('button, a');
+  for (const element of allElements) {
+    const text = element.textContent?.trim() || '';
+    if (text === 'Apply Manually') {
+      console.log("'Apply Manually' found by exact text match!");
+      showNotification("Clicking Apply Manually", "success");
+      await sleep(500);
+      (element as HTMLElement).click();
+      return true;
+    }
+  }
+
+  // Try case-insensitive match
+  for (const element of allElements) {
+    const text = element.textContent?.trim().toLowerCase() || '';
+    if (text === 'apply manually') {
+      console.log("'Apply Manually' found by case-insensitive match!");
+      showNotification("Clicking Apply Manually", "success");
+      await sleep(500);
+      (element as HTMLElement).click();
+      return true;
+    }
+  }
+
+  console.log("'Apply Manually' button not found");
+  showNotification("Could not find Apply Manually button", "error");
+
+  // Log all visible buttons for debugging
+  console.log("All visible buttons/links found:");
+  allElements.forEach((el, i) => {
+    if (isVisible(el as HTMLElement)) {
+      console.log(`  ${i + 1}. "${el.textContent?.trim()}"`);
+    }
+  });
+
+  return false;
+}
+
+// ============================================
+// STEP 4: SCRAPE FORM QUESTIONS
+// ============================================
+interface Question {
+  label: string;
+  type: string;
+  name: string;
+  id: string;
+  required: boolean;
+  options?: string[];
+}
+
+function scrapeQuestions(): Question[] {
+  console.log("STEP 4: Scraping form questions...");
+  console.log("=".repeat(60));
+
+  const questions: Question[] = [];
+
+  // Scrape text inputs
+  const textInputs = document.querySelectorAll('input[type="text"]:not([type="hidden"])');
+  textInputs.forEach(input => {
+    const label = input.closest('div')?.querySelector('label')?.textContent?.replace(/\*/g, '').trim() || '';
+    if (label && label.length > 2) {
+      const question: Question = {
+        label,
+        type: 'text',
+        name: (input as HTMLInputElement).name,
+        id: (input as HTMLInputElement).id,
+        required: (input as HTMLInputElement).getAttribute('aria-required') === 'true'
+      };
+      questions.push(question);
+      console.log(`Text: "${label}" (${question.id}) - Required: ${question.required}`);
+    }
+  });
+
+  // Scrape radio groups
+  const radioGroups = new Set<string>();
+  document.querySelectorAll('input[type="radio"]').forEach(radio => {
+    const name = (radio as HTMLInputElement).name;
+    if (name && !radioGroups.has(name)) {
+      radioGroups.add(name);
+      const fieldset = radio.closest('fieldset');
+      const label = fieldset?.querySelector('legend label')?.textContent?.replace(/\*/g, '').trim() || '';
+
+      const options = Array.from(document.querySelectorAll(`input[name="${name}"]`))
+        .map(r => r.closest('label')?.textContent?.trim() || (r as HTMLInputElement).value);
+
+      if (label) {
+        questions.push({
+          label,
+          type: 'radio',
+          name,
+          id: '',
+          required: true,
+          options
+        });
+        console.log(`Radio: "${label}" - Options: [${options.join(', ')}]`);
+      }
+    }
+  });
+
+  // Scrape dropdowns
+  document.querySelectorAll('select, button[aria-haspopup="listbox"]').forEach(dropdown => {
+    const label = dropdown.closest('div[data-automation-id^="formField"]')?.querySelector('label')?.textContent?.replace(/\*/g, '').trim() || '';
+    if (label && label.length > 2) {
+      questions.push({
+        label,
+        type: 'select',
+        name: (dropdown as HTMLElement).getAttribute('name') || '',
+        id: (dropdown as HTMLElement).id,
+        required: true
+      });
+      console.log(`📝 Dropdown: "${label}" (${(dropdown as HTMLElement).id})`);
+    }
+  });
+
+  console.log("=".repeat(60));
+  console.log(`Total questions scraped: ${questions.length}`);
+  console.log("=".repeat(60));
+
+  return questions;
+}
+
+// ============================================
+// STEP 5: FILL APPLICATION FORM
+// ============================================
+function fillInput(element: HTMLInputElement | HTMLTextAreaElement, value: string): boolean {
+  if (!element) return false;
+  element.focus();
+  element.value = value;
+  element.dispatchEvent(new Event('input', { bubbles: true }));
+  element.dispatchEvent(new Event('change', { bubbles: true }));
+  element.dispatchEvent(new Event('blur', { bubbles: true }));
+  element.blur();
+  console.log(`Filled: ${element.id || element.name} = ${value}`);
+  return true;
+}
+
+async function fillForm() {
+  console.log("STEP 5: Filling application form");
+  showNotification("Filling form with your data", "info");
+
+  await sleep(2000);
+
+  // Fill "How Did You Hear About Us?"
+  const sourceInput = document.getElementById('source--source') as HTMLInputElement;
+  console.log("sourceInput=", sourceInput);
+
+  if (!sourceInput) {
+    console.log('Source input not found, trying alternative selector');
+    // Try finding by placeholder or other attributes
+    const searchInputs = document.querySelectorAll('input[placeholder="Search"]');
+    for (const input of searchInputs) {
+      const container = input.closest('[data-automation-id="multiSelectContainer"]');
+      if (container) {
+        // Found the right input
+        await fillSourceField(input as HTMLInputElement);
+        return;
       }
     }
   }
-  
-  // STAGE 2: Apply options page
-  else if (url.includes('apply') && !url.includes('applymanually')) {
-    console.log("On apply options page");
-    await sleep(1000);
-    const manuallyClicked = await detectAndClickApplyManually();
-    
-    if (manuallyClicked) {
-      console.log("Waiting for application form to load");
+
+  async function fillSourceField(inputElement: HTMLInputElement) {
+    // Make sure dropdown is open
+    const inputContainer = inputElement.closest('[data-automation-id="multiselectInputContainer"]') as HTMLElement;
+    if (inputContainer) {
+      inputContainer.click();
+      await sleep(300);
     }
-  }    
-    //showNotification('Application submitted successfully!', 'success');
+
+    // Find and click "Advertisement" option to expand it
+    await sleep(500);
+
+    const options = document.querySelectorAll('[data-automation-id="promptOption"]');
+    let advertisementOption: HTMLElement | null = null;
+
+    for (const option of options) {
+      if (option.textContent?.trim() === 'Advertisement') {
+        advertisementOption = option.parentElement as HTMLElement; // Click the parent container
+        break;
+      }
+    }
+
+    if (advertisementOption) {
+      advertisementOption.click();
+      console.log('Clicked Advertisement to expand');
+      await sleep(800);
+
+      // Now find sub-options (they should appear after expansion)
+      const allOptions = document.querySelectorAll('[data-automation-id="promptOption"]');
+
+      // Look for "Internet Advertisement" or similar
+      for (const option of allOptions) {
+        const text = option.textContent?.trim();
+        if (text && text.includes('Internet')) {
+          (option.parentElement as HTMLElement).click();
+          console.log(`Selected: ${text}`);
+          await sleep(300);
+          return;
+        }
+      }
+
+      // If no "Internet" option found, click the first sub-option
+      if (allOptions.length > 4) { // More than the 4 parent options
+        (allOptions[4].parentElement as HTMLElement).click();
+        console.log('Selected first sub-option');
+      }
+    } else {
+      console.log('Could not find Advertisement option');
+    }
+  }
+
+  // Call the function
+  if (sourceInput) {
+    await fillSourceField(sourceInput);
   }
 
 
+  await sleep(400);
 
-// ============================================
-// INITIALIZE
-// ============================================
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', executeFullFlow);
-} else {
-  executeFullFlow();
+  // Click "No" for previously worked
+  const noRadio = document.querySelector('input[name="candidateIsPreviousWorker"][value="false"]') as HTMLInputElement;
+  if (noRadio) {
+    noRadio.checked = true;
+    noRadio.click();
+    noRadio.dispatchEvent(new Event('change', { bubbles: true }));
+    console.log('Selected: No (previously worked)');
+  }
+  await sleep(400);
+
+  // Fill name fields
+  const firstNameInput = document.getElementById('name--legalName--firstName') as HTMLInputElement;
+  if (firstNameInput) fillInput(firstNameInput, CANDIDATE_DATA.firstName);
+  await sleep(400);
+
+  const lastNameInput = document.getElementById('name--legalName--lastName') as HTMLInputElement;
+  if (lastNameInput) fillInput(lastNameInput, CANDIDATE_DATA.lastName);
+  await sleep(400);
+
+  // Fill address
+  const addressInput = document.getElementById('address--addressLine1') as HTMLInputElement;
+  if (addressInput) fillInput(addressInput, CANDIDATE_DATA.address);
+  await sleep(400);
+
+  const cityInput = document.getElementById('address--city') as HTMLInputElement;
+  if (cityInput) fillInput(cityInput, CANDIDATE_DATA.city);
+  await sleep(400);
+
+  const postalInput = document.getElementById('address--postalCode') as HTMLInputElement;
+  if (postalInput) fillInput(postalInput, CANDIDATE_DATA.postalCode);
+  await sleep(400);
+
+  // Fill phone
+  const phoneInput = document.getElementById('phoneNumber--phoneNumber') as HTMLInputElement;
+  if (phoneInput) fillInput(phoneInput, CANDIDATE_DATA.phone);
+  await sleep(400);
+
+  console.log("Form filled successfully!");
+  showNotification("Form filled! Ready to submit...", "success");
 }
 
+// ============================================
+// STEP 6: SUBMIT FORM
+// ============================================
+async function submitForm(): Promise<boolean> {
+  console.log("STEP 6: Submitting form");
+  showNotification("Submitting application", "info");
 
+  await sleep(1000);
 
+  const submitButton = document.querySelector('button[data-automation-id="pageFooterNextButton"]');
 
+  if (submitButton && isVisible(submitButton as HTMLElement)) {
+    console.log("Submit button found!");
+    await sleep(500);
+    (submitButton as HTMLElement).click();
+    console.log("Form submitted!");
+    showNotification("Application submitted successfully!", "success");
+    return true;
+  }
 
-// Watch for URL changes
+  // Fallback
+  const allButtons = document.querySelectorAll('button');
+  for (const button of allButtons) {
+    const text = button.textContent?.trim().toLowerCase() || '';
+    if (text.includes('save and continue') || text.includes('submit')) {
+      console.log("Submit button found by text!");
+      await sleep(500);
+      (button as HTMLElement).click();
+      console.log("Form submitted!");
+      showNotification("Application submitted successfully!", "success");
+      return true;
+    }
+  }
+
+  console.log("Submit button not found");
+  showNotification("Could not find submit button", "error");
+  return false;
+}
+
+// ============================================
+// MAIN FLOW ORCHESTRATOR
+// ============================================
+async function executeFlow() {
+  console.log("\n" + "=".repeat(60));
+  console.log("JOB AUTO-APPLY FLOW STARTED");
+  console.log("=".repeat(60) + "\n");
+
+  const pageType = detectPageType();
+  console.log(`Page Type: ${pageType}`);
+
+  switch (pageType) {
+    case 'job-listing':
+      console.log("On job listing page - Please select a specific job first");
+      showNotification("Please click on a specific job to apply", "info");
+      break;
+
+    case 'job-details':
+      console.log("Stage 1: Job Details Page");
+      showNotification("Job details page detected!", "info");
+      await sleep(1000);
+
+      const applyClicked = await clickApplyButton();
+      if (applyClicked) {
+        console.log("Waiting for popup/next page...");
+        showNotification("Apply clicked! Waiting for options...", "info");
+        await sleep(3000);
+
+        // Check if popup appeared with Apply Manually option
+        const applyManuallyExists = document.querySelector('a[data-automation-id="applyManually"]') ||
+          Array.from(document.querySelectorAll('button, a')).some(el =>
+            el.textContent?.trim() === 'Apply Manually'
+          );
+
+        if (applyManuallyExists) {
+          console.log("Popup detected with Apply Manually option");
+          await clickApplyManually();
+          console.log("Waiting for application form...");
+          await sleep(3000);
+        }
+      }
+      break;
+
+    case 'apply-options':
+      console.log("Stage 2: Apply Options Page");
+      showNotification("Apply options page detected!", "info");
+      await sleep(1000);
+
+      const manuallyClicked = await clickApplyManually();
+      if (manuallyClicked) {
+        console.log("Waiting for application form...");
+        await sleep(3000);
+        // Flow will continue when URL changes
+      }
+      break;
+
+    case 'application-form':
+      console.log("Stage 3: Application Form Page");
+      showNotification("Application form detected!", "info");
+      await sleep(2000);
+
+      // Scrape questions
+      const questions = scrapeQuestions();
+      await sleep(1000);
+
+      // Fill form
+      await fillForm();
+      await sleep(2000);
+
+      // Submit
+      await submitForm();
+
+      console.log("\n" + "=".repeat(60));
+      console.log("AUTO-APPLY PROCESS COMPLETE!");
+      console.log("=".repeat(60) + "\n");
+      break;
+
+    case 'unknown':
+      console.log("Unknown page type - Extension is idle");
+      break;
+  }
+}
+
+// ============================================
+// INITIALIZE ON PAGE LOAD
+// ============================================
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log("Page loaded, waiting for elements...");
+    setTimeout(executeFlow, 2000); // Give page time to fully render
+  });
+} else {
+  console.log("Document ready, waiting for elements...");
+  setTimeout(executeFlow, 2000); // Give page time to fully render
+}
+
+// ============================================
+// WATCH FOR URL CHANGES (SPA NAVIGATION)
+// ============================================
 let lastUrl = location.href;
 new MutationObserver(() => {
   const currentUrl = location.href;
   if (currentUrl !== lastUrl) {
     lastUrl = currentUrl;
-    console.log("URL changed to:", currentUrl);
-    if (isApplicationPage()) {
-      setTimeout(autoFillForm, 2000);
-    }
+    console.log("URL changed:", currentUrl);
+    setTimeout(executeFlow, 1500);
   }
 }).observe(document, { subtree: true, childList: true });
 
-// Also watch for new form fields appearing (for dynamic forms)
-const observer = new MutationObserver((mutations) => {
+// ============================================
+// WATCH FOR NEW FORM FIELDS (DYNAMIC FORMS)
+// ============================================
+const formObserver = new MutationObserver((mutations) => {
   for (const mutation of mutations) {
     if (mutation.addedNodes.length > 0) {
-      // Check if new input fields were added
       const hasNewInputs = Array.from(mutation.addedNodes).some(node => {
         if (node.nodeType === 1) {
           const element = node as Element;
@@ -420,20 +611,16 @@ const observer = new MutationObserver((mutations) => {
         }
         return false;
       });
-      
-      if (hasNewInputs) {
-        console.log("New form fields detected, re-running auto-fill...");
-        setTimeout(autoFillForm, 1000);
+
+      if (hasNewInputs && detectPageType() === 'application-form') {
+        console.log("New form fields detected");
+        setTimeout(fillForm, 1000);
         break;
       }
     }
   }
 });
 
-observer.observe(document.body, { 
-  childList: true, 
-  subtree: true 
-});
-
-
-
+if (document.body) {
+  formObserver.observe(document.body, { childList: true, subtree: true });
+}
